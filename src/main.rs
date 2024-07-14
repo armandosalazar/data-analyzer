@@ -17,6 +17,7 @@ fn change_level(level: Expr) -> Expr {
     )
 }
 
+#[allow(unused_variables)]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let path: &str = "/Users/armando/Downloads/Base de datos.csv";
 
@@ -28,10 +29,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_dtype_overwrite(Some(Arc::new(schema)))
         .finish()?;
 
-    let results = get_subjets(&df)?;
+    // let results = get_subjets(&df)?;
+    // let columns = results.get_columns();
 
-    println!("{:?}", results.get_columns());
-    // println!("{:?}", results);
+    // for i in 0..columns[0].len() {
+    //     println!(
+    //         "{:?} {:?}",
+    //         columns[0].get(i)?.to_string().replace("\"", ""),
+    //         columns[1].get(i)?.to_string().replace("\"", "")
+    //     );
+    // }
+
+    let results = get_students(&df)?;
+    // let results = get_specialties(&df)?;
+    // let results = get_subjets(&df)?;
+    println!("{:?}", results);
 
     Ok(())
 }
@@ -40,11 +52,40 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 fn get_students(df: &LazyFrame) -> PolarsResult<DataFrame> {
     df.clone()
         .lazy()
-        .limit(10)
-        .select(&[col("registro"), col("nombre_completo")])
-        .group_by([col("registro")])
-        .agg([len().alias("cantidad"), col("nombre_completo").first()])
+        // .limit(10)
+        .select(&[
+            col("registro"),
+            col("nombre_completo"),
+            col("tipo"),
+            col("estado"),
+            col("semestre"),
+            col("grupo"),
+            col("turno"),
+            col("nivel"),
+            col("nombre").alias("nombre_especialidad"),
+            col("clave"),
+            col("nombre_duplicated_0").alias("nombre_materia"),
+            col("estatus_materia"),
+        ])
+        .group_by([col("registro"), col("clave")])
+        .agg([
+            // len().alias("cantidad"),
+            col("nombre_completo").unique().first(),
+            col("tipo").unique().first(),
+            col("estado").unique().first(),
+            col("semestre").unique().first(),
+            col("grupo").unique().first(),
+            col("turno").unique().first(),
+            col("nivel").unique().first(),
+            col("nombre_especialidad").unique().first(),
+            // col("clave"),
+            col("nombre_materia").unique().first(),
+            col("estatus_materia").unique().first(),
+        ])
         .sort(["registro"], Default::default())
+        // .filter(col("clave").neq(col("nombre_materia")))
+        // .filter(col("estatus_materia").neq(lit(1)))
+        // .filter(col("nombre_materia").neq(lit(1)))
         .collect()
 }
 
@@ -52,24 +93,28 @@ fn get_students(df: &LazyFrame) -> PolarsResult<DataFrame> {
 fn get_specialties(df: &LazyFrame) -> PolarsResult<DataFrame> {
     df.clone()
         .lazy()
-        .select(&[col("especialidad"), col("nombre")])
+        .select(&[
+            col("especialidad"),
+            col("nombre").alias("nombre_especialidad"),
+        ])
         .group_by([col("especialidad")])
-        .agg([col("nombre").unique()])
+        .agg([col("nombre_especialidad").unique()])
         .sort(["especialidad"], Default::default())
         .collect()
 }
 
+#[allow(dead_code)]
 fn get_subjets(df: &LazyFrame) -> PolarsResult<DataFrame> {
     df.clone()
         .lazy()
-        //.limit(5)
-        .select(&[col("clave"), col("nombre_duplicated_0")])
+        // .limit(5)
+        .select(&[col("clave"), col("nombre_duplicated_0").alias("nombre")])
         .group_by([col("clave")])
         .agg([
-            col("nombre_duplicated_0").unique().alias("nombre"),
-            col("nombre_duplicated_0").unique().len().alias("cantidad"),
+            col("nombre").unique().first(),
+            // col("nombre_duplicated_0").unique().len().alias("cantidad"),
         ])
-        .filter(col("cantidad").gt(lit(1)))
+        // .filter(col("cantidad").gt(lit(1)))
         .collect()
 }
 
