@@ -41,16 +41,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     //     );
     // }
 
-    // let results = get_students(&df)?;
-    // let results = get_specialties(&df)?;
-    // let results = get_subjets(&df)?;
-    // let results = get_teachers(&df)?;
-    let results = get_divisions(&df)?;
+    let results = get_students(&df)?;
     println!("{:?}", results);
-    for i in 0..results.height() {
-        // let division = results.column("division")?.u32()?.get(i).unwrap();
-        // let name = results.column("nombre")?.list()?.get(i).unwrap();
-    }
+    // let results = get_specialties(&df)?;
+    // println!("{:?}", results);
+    // let results = get_subjets(&df)?;
+    // println!("{:?}", results);
+    // let results = get_teachers(&df)?;
+    // println!("{:?}", results);
+    // let results = get_divisions(&df)?;
+    // println!("{:?}", results);
+    // for i in 0..results.height() {
+    //     let division = results.column("division")?.u32()?.get(i).unwrap();
+    //     let name = results.column("nombre")?.list()?.get(i).unwrap();
+    // }
 
     Ok(())
 }
@@ -62,37 +66,29 @@ fn get_students(df: &LazyFrame) -> PolarsResult<DataFrame> {
         // .limit(10)
         .select(&[
             col("registro"),
-            col("nombre_completo"),
+            col("nombre_completo").alias("nombre"),
             col("tipo"),
             col("estado"),
             col("semestre"),
             col("grupo"),
             col("turno"),
             col("nivel"),
+            col("especialidad"),
             col("nombre").alias("nombre_especialidad"),
-            col("clave"),
-            col("nombre_duplicated_0").alias("nombre_materia"),
-            col("estatus_materia"),
         ])
-        .group_by([col("registro"), col("clave")])
+        .group_by([col("registro")])
         .agg([
-            // len().alias("cantidad"),
-            // col("nombre_completo").unique().first(),
-            // col("tipo").unique().first(),
-            // col("estado").unique().first(),
-            // col("semestre").unique().first(),
-            // col("grupo").unique().first(),
-            // col("turno").unique().first(),
-            // col("nivel").unique().first(),
-            // col("nombre_especialidad").unique().first(),
-            // col("clave"),
-            col("nombre_materia").unique().first(),
-            col("estatus_materia").unique().first(),
+            col("nombre").unique().first(),
+            col("tipo").unique().first(),
+            col("estado").unique().first(),
+            col("semestre").unique().first(),
+            col("grupo").unique().first(),
+            col("turno").unique().first(),
+            col("nivel").unique().first(),
+            col("especialidad").unique().first(),
+            col("nombre_especialidad").unique().first(),
         ])
         .sort(["registro"], Default::default())
-        // .filter(col("clave").neq(col("nombre_materia")))
-        // .filter(col("estatus_materia").neq(lit(1)))
-        // .filter(col("nombre_materia").neq(lit(1)))
         .collect()
 }
 
@@ -100,14 +96,15 @@ fn get_students(df: &LazyFrame) -> PolarsResult<DataFrame> {
 fn get_specialties(df: &LazyFrame) -> PolarsResult<DataFrame> {
     df.clone()
         .lazy()
-        .select(&[
-            col("especialidad"),
-            col("nombre").alias("nombre_especialidad"),
-        ])
+        .select(&[col("especialidad"), col("nombre")])
         .group_by([col("especialidad")])
-        .agg([col("nombre_especialidad").unique().len()])
+        .agg([
+            col("nombre").unique(),
+            // col("nombre").unique().len().alias("cantidad"),
+        ])
         .sort(["especialidad"], Default::default())
-        .filter(col("nombre_especialidad").gt(lit(1)))
+        // .filter(col("cantidad").gt(lit(1)))
+        .explode(["nombre"])
         .collect()
 }
 
@@ -120,11 +117,11 @@ fn get_subjets(df: &LazyFrame) -> PolarsResult<DataFrame> {
         .group_by([col("clave")])
         .agg([
             col("nombre").unique().first(),
-            // col("nombre"),
             // col("nombre").unique().len().alias("cantidad"),
         ])
-        // .filter(col("nombre").unique().len().gt(lit(1)))
         // .filter(col("cantidad").gt(lit(1)))
+        .sort(["clave"], Default::default())
+        // .explode(["nombre"])
         .collect()
 }
 
@@ -132,10 +129,10 @@ fn get_subjets(df: &LazyFrame) -> PolarsResult<DataFrame> {
 fn get_divisions(df: &LazyFrame) -> PolarsResult<DataFrame> {
     df.clone()
         .lazy()
-        .select(&[col("division"), col("academia").alias("nombre")])
+        .select(&[col("division"), col("academia")])
         .group_by([col("division")])
-        .agg([col("nombre").unique()])
-        .explode(["nombre"])
+        .agg([col("academia").unique()])
+        .explode(["academia"])
         .sort(["division"], Default::default())
         .collect()
 }
