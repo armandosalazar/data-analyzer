@@ -24,6 +24,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut schema: Schema = Schema::new();
     schema.with_column("registro".into(), DataType::UInt32);
     schema.with_column("especialidad".into(), DataType::UInt32);
+    schema.with_column("division".into(), DataType::UInt32);
 
     let df: LazyFrame = LazyCsvReader::new(path)
         .with_dtype_overwrite(Some(Arc::new(schema)))
@@ -46,6 +47,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // let results = get_teachers(&df)?;
     let results = get_divisions(&df)?;
     println!("{:?}", results);
+    for i in 0..results.height() {
+        // let division = results.column("division")?.u32()?.get(i).unwrap();
+        // let name = results.column("nombre")?.list()?.get(i).unwrap();
+    }
 
     Ok(())
 }
@@ -130,6 +135,7 @@ fn get_divisions(df: &LazyFrame) -> PolarsResult<DataFrame> {
         .select(&[col("division"), col("academia").alias("nombre")])
         .group_by([col("division")])
         .agg([col("nombre").unique()])
+        .explode(["nombre"])
         .sort(["division"], Default::default())
         .collect()
 }
