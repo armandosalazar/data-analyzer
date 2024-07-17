@@ -40,9 +40,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     //     );
     // }
 
-    let results = get_students(&df)?;
+    // let results = get_students(&df)?;
     // let results = get_specialties(&df)?;
     // let results = get_subjets(&df)?;
+    // let results = get_teachers(&df)?;
+    let results = get_divisions(&df)?;
     println!("{:?}", results);
 
     Ok(())
@@ -98,8 +100,9 @@ fn get_specialties(df: &LazyFrame) -> PolarsResult<DataFrame> {
             col("nombre").alias("nombre_especialidad"),
         ])
         .group_by([col("especialidad")])
-        .agg([col("nombre_especialidad").unique()])
+        .agg([col("nombre_especialidad").unique().len()])
         .sort(["especialidad"], Default::default())
+        .filter(col("nombre_especialidad").gt(lit(1)))
         .collect()
 }
 
@@ -112,13 +115,33 @@ fn get_subjets(df: &LazyFrame) -> PolarsResult<DataFrame> {
         .group_by([col("clave")])
         .agg([
             col("nombre").unique().first(),
-            // col("nombre_duplicated_0").unique().len().alias("cantidad"),
+            // col("nombre"),
+            // col("nombre").unique().len().alias("cantidad"),
         ])
+        // .filter(col("nombre").unique().len().gt(lit(1)))
         // .filter(col("cantidad").gt(lit(1)))
         .collect()
 }
 
 #[allow(dead_code)]
+fn get_divisions(df: &LazyFrame) -> PolarsResult<DataFrame> {
+    df.clone()
+        .lazy()
+        .select(&[col("division"), col("academia").alias("nombre")])
+        .group_by([col("division")])
+        .agg([col("nombre").unique()])
+        .sort(["division"], Default::default())
+        .collect()
+}
+#[allow(dead_code)]
 fn get_teachers(df: &LazyFrame) -> PolarsResult<DataFrame> {
-    df.clone().lazy().select(&[]).collect()
+    df.clone()
+        .lazy()
+        .select(&[col("nomina"), col("nombre_duplicated_1").alias("nombre")])
+        .group_by([col("nomina")])
+        .agg([col("nombre").unique().first()])
+        // .agg([col("nombre").unique().len()])
+        // .filter(col("nombre").gt(lit(1)))
+        .sort(["nomina"], Default::default())
+        .collect()
 }
