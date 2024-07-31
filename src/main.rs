@@ -17,6 +17,21 @@ fn change_level(level: Expr) -> Expr {
     )
 }
 
+fn change_grade(grade: Expr) -> Expr {
+    grade.map(
+        |s: Series| -> PolarsResult<Option<Series>> {
+            let chunks: Float32Chunked = s.f32()?.apply(|value| match value? {
+                value if value > 100.0 => Some(value / 100.0),
+                value if value <= 100.0 => Some(value / 1.0),
+                _ => None,
+            });
+
+            Ok(Some(chunks.into_series()))
+        },
+        GetOutput::default(),
+    )
+}
+
 #[allow(unused_variables)]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let path: &str = "/Users/armando/Downloads/Base de datos.csv";
@@ -93,17 +108,18 @@ fn get_grades(df: &LazyFrame) -> PolarsResult<DataFrame> {
                 [
                     col("nombre_alumno").unique().first(),
                     col("nombre_materia").unique().first(),
-                    col("estatus_materia").unique().first(),
-                    col("nomina_maestro").unique().first(),
-                    col("calificacion_primer_parcial").unique().first(),
-                    col("faltas_primer_parcial").unique().first(),
-                    col("ponderacion_primer_parcial").unique().first(),
-                    col("calificacion_segundo_parcial").unique().first(),
-                    col("faltas_segundo_parcial").unique().first(),
-                    col("ponderacion_segundo_parcial").unique().first(),
-                    col("calificacion_tercer_parcial").unique().first(),
-                    col("faltas_tercer_parcial").unique().first(),
-                    col("ponderacion_tercer_parcial").unique().first(),
+                    //col("estatus_materia").unique().first(),
+                    //col("nomina_maestro").unique().first(),
+                    //col("calificacion_primer_parcial").unique().first(),
+                    //col("faltas_primer_parcial").unique().first(),
+                    //col("ponderacion_primer_parcial").unique().first(),
+                    //col("calificacion_segundo_parcial").unique().first(),
+                    //col("faltas_segundo_parcial").unique().first(),
+                    //col("ponderacion_segundo_parcial").unique().first(),
+                    //col("calificacion_tercer_parcial").unique().first(),
+                    //col("faltas_tercer_parcial").unique().first(),
+                    //col("ponderacion_tercer_parcial").unique().first(),
+                    change_grade(col("calificacion_primer_parcial")).unique().first().alias("OK"),
                 ]
             )
             .filter(col("registro").eq(lit(21110110)))
@@ -123,7 +139,7 @@ fn get_grades(df: &LazyFrame) -> PolarsResult<DataFrame> {
                     col("nombre_duplicated_0").alias("nombre_materia"),
                     col("estatus_materia"),
                     col("nomina").alias("nomina_maestro"),
-                    col("calificacion1").alias("calificacion_primer_parcial"),
+                    col("calificacion1").alias("calificacion_primer_parcial").cast(DataType::Float32),
                     col("faltas1").alias("faltas_primer_parcial"),
                     col("ponderacion1").alias("ponderacion_primer_parcial"),
                     col("calificacion2").alias("calificacion_segundo_parcial"),
@@ -144,6 +160,7 @@ fn get_grades(df: &LazyFrame) -> PolarsResult<DataFrame> {
                     col("calificacion_segundo_parcial").unique().first(),
                     col("faltas_segundo_parcial").unique().first(),
                     col("ponderacion_segundo_parcial").unique().first(),
+                    change_grade(col("calificacion_primer_parcial")).unique().first().alias("OK"),
                 ]
             )
             .filter(col("registro").eq(lit(21110110)))
